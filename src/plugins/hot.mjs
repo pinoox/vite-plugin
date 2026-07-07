@@ -1,7 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { printPinooxDevBanner } from '../banner.mjs';
-import { resolveHotFile } from '../config.mjs';
+import {
+    normalizeBuildOutDir,
+    resolveHotFile,
+    writeBuildOutDirCache,
+} from '../build-dir.mjs';
 import {
     mergedEnv,
     resolveDevServerUrlFromInstance,
@@ -20,23 +24,28 @@ export function pinooxHot(options = {}) {
     const pluginEnv = mergedEnv(options.env ?? {});
 
     const themeRoot = process.cwd();
-    const hotRelative = resolveHotFile(options.env ?? {}, options);
-    const hotFilePath = path.isAbsolute(hotRelative)
-        ? hotRelative
-        : path.join(themeRoot, hotRelative);
+    /** @type {string|null} */
+    let lastHotPath = null;
 
     const writeHot = (server) => {
+        const outDir = normalizeBuildOutDir(server.config.build?.outDir);
+        const hotRelativePath = resolveHotFile(pluginEnv, options, outDir);
+        const hotPath = path.isAbsolute(hotRelativePath)
+            ? hotRelativePath
+            : path.join(themeRoot, hotRelativePath);
         const devUrl = resolveDevServerUrlFromInstance(server, pluginEnv);
         const port = resolveListeningPort(server) ?? server.config.server.port ?? 5173;
 
-        fs.mkdirSync(path.dirname(hotFilePath), { recursive: true });
-        fs.writeFileSync(hotFilePath, devUrl);
-        fs.writeFileSync(path.join(path.dirname(hotFilePath), '.vite-dev-port'), String(port));
+        fs.mkdirSync(path.dirname(hotPath), { recursive: true });
+        fs.writeFileSync(hotPath, devUrl);
+        fs.writeFileSync(path.join(path.dirname(hotPath), '.vite-dev-port'), String(port));
+        writeBuildOutDirCache(themeRoot, outDir);
+        lastHotPath = hotPath;
     };
 
     const cleanup = () => {
-        if (fs.existsSync(hotFilePath)) {
-            fs.unlinkSync(hotFilePath);
+        if (lastHotPath !== null && fs.existsSync(lastHotPath)) {
+            fs.unlinkSync(lastHotPath);
         }
     };
 

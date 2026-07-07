@@ -1,6 +1,14 @@
 import { composePinooxPlugins } from './compose.mjs';
+import {
+    hotFileForOutDir,
+    manifestFileForOutDir,
+    normalizeBuildOutDir,
+    resolveBuildOutDir,
+    resolveHotFile,
+    writeBuildOutDirCache,
+} from './build-dir.mjs';
 import { createPinooxViteConfig } from './factory.mjs';
-import { resolveHotFile, resolvePinooxPluginConfig } from './config.mjs';
+import { resolvePinooxPluginConfig } from './config.mjs';
 import { pinooxHot } from './plugins/hot.mjs';
 import { pinooxDevAssets } from './plugins/dev-assets.mjs';
 import { collectAbsoluteWatchRoots, pinooxRefresh, resolveRefreshPaths } from './refresh.mjs';
@@ -30,13 +38,18 @@ export {
     collectAbsoluteWatchRoots,
     composePinooxPlugins,
     createPinooxViteConfig,
+    hotFileForOutDir,
+    manifestFileForOutDir,
+    normalizeBuildOutDir,
     pinooxDevAssets,
     pinooxHot,
     pinooxRefresh,
     pinooxServer,
+    resolveBuildOutDir,
     resolveHotFile,
     resolvePinooxPluginConfig,
     resolveRefreshPaths,
+    writeBuildOutDirCache,
 };
 
 export default pinoox;

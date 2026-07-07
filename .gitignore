@@ -3,3 +3,4 @@ shims/
 *.tgz
 .DS_Store
 .package-lock.json
+.pinoox/

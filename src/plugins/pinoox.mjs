@@ -1,4 +1,4 @@
-import { DEFAULT_BUILD_DIR } from '../constants.mjs';
+import { normalizeBuildOutDir, resolveBuildOutDir, writeBuildOutDirCache } from '../build-dir.mjs';
 import { resolveBuildInput } from '../config.mjs';
 import { mergePinooxServer, pinooxServer } from '../server.mjs';
 
@@ -9,20 +9,26 @@ import { mergePinooxServer, pinooxServer } from '../server.mjs';
  */
 export function resolvePinooxPlugin(pluginConfig) {
     const env = pluginConfig.env ?? {};
+    /** @type {string} */
+    let resolvedOutDir = resolveBuildOutDir(env);
 
     return {
         name: 'pinoox',
         config(userConfig) {
             const entries = resolveBuildInput(userConfig, pluginConfig);
             const serverDefaults = pinooxServer(env, pluginConfig.server ?? {});
+            resolvedOutDir = resolveBuildOutDir(
+                env,
+                userConfig.build?.outDir ?? pluginConfig.build?.outDir,
+            );
 
             return {
                 base: userConfig.base ?? './',
                 build: {
                     manifest: userConfig.build?.manifest ?? true,
-                    outDir: userConfig.build?.outDir ?? DEFAULT_BUILD_DIR,
                     ...(pluginConfig.build ?? {}),
                     ...(userConfig.build ?? {}),
+                    outDir: userConfig.build?.outDir ?? pluginConfig.build?.outDir ?? resolvedOutDir,
                     rollupOptions: {
                         ...(userConfig.build?.rollupOptions ?? {}),
                         ...(pluginConfig.build?.rollupOptions ?? {}),
@@ -33,6 +39,12 @@ export function resolvePinooxPlugin(pluginConfig) {
                 },
                 server: mergePinooxServer(serverDefaults, userConfig.server),
             };
+        },
+        configResolved(resolved) {
+            resolvedOutDir = normalizeBuildOutDir(resolved.build.outDir);
+        },
+        closeBundle() {
+            writeBuildOutDirCache(process.cwd(), resolvedOutDir);
         },
     };
 }

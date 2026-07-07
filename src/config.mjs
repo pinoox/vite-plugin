@@ -1,4 +1,4 @@
-import { DEFAULT_HOT_FILE } from './constants.mjs';
+export { resolveHotFile } from './build-dir.mjs';
 
 /**
  * @typedef {Object} PinooxPluginConfig
@@ -10,20 +10,6 @@ import { DEFAULT_HOT_FILE } from './constants.mjs';
  * @property {import('vite').ServerOptions} [server]
  * @property {import('vite').BuildOptions} [build]
  */
-
-/**
- * Hot-file path shared by Node (pinooxHot) and PHP (FrontendConfig::hotRelativePath).
- *
- * @param {Record<string, string>} env
- * @param {{ file?: string }} [options]
- */
-export function resolveHotFile(env = {}, options = {}) {
-    if (options.file) {
-        return options.file;
-    }
-
-    return env.VITE_HOT_FILE || process.env.VITE_HOT_FILE || DEFAULT_HOT_FILE;
-}
 
 /**
  * @param {string|string[]|PinooxPluginConfig} config
