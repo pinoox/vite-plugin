@@ -33,6 +33,9 @@
   "engines": {
     "node": ">=18"
   },
+  "scripts": {
+    "pack:check": "npm pack --dry-run"
+  },
   "publishConfig": {
     "access": "public"
   },

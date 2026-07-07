@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check tarball contents
+        run: npm run pack:check
+
+      - name: Smoke test — install tarball and import
+        run: |
+          npm pack
+          TARBALL=$(ls pinooxhq-vite-plugin-*.tgz)
+          mkdir smoke && cd smoke
+          npm init -y >/dev/null 2>&1
+          npm install "../${TARBALL}" vite@^8
+          node --input-type=module -e "
+            import pinoox, { pinooxHot, createPinooxViteConfig } from '@pinooxhq/vite-plugin';
+            import { pinooxVueTemplateOptions } from '@pinooxhq/vite-plugin/vue';
+            if (typeof pinoox !== 'function') throw new Error('default export missing');
+            if (typeof pinooxHot !== 'function') throw new Error('pinooxHot missing');
+            if (typeof createPinooxViteConfig !== 'function') throw new Error('createPinooxViteConfig missing');
+            if (typeof pinooxVueTemplateOptions !== 'function') throw new Error('pinooxVueTemplateOptions missing');
+            console.log('smoke ok');
+          "
