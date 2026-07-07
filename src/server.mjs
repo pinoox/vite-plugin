@@ -1,8 +1,8 @@
 import {
     parseOrigin,
     resolveNetworkMode,
-    resolveViteDevOrigin,
     resolveViteHost,
+    resolveViteOriginFromPort,
     resolveVitePublicOrigin,
 } from './env.mjs';
 import { DEFAULT_PHP_ORIGIN, DEFAULT_VITE_PORT } from './constants.mjs';
@@ -78,7 +78,7 @@ export function pinooxServer(env = {}, options = {}) {
     const network = resolveNetworkMode(env, options);
     const viteOrigin = network
         ? resolveVitePublicOrigin(env, port)
-        : resolveViteDevOrigin(env, port, options);
+        : resolveViteOriginFromPort(env, port, options);
     const strictPort = options.strictPort ?? Boolean(explicitPort);
     const prefixes = resolveProxyPrefixes(env, options, serverUrl);
     const proxy = {};

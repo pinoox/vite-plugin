@@ -19,6 +19,11 @@ export function rewriteDevAssetUrls(code, devServerUrl) {
 
     // Replace stale absolute dev origins (e.g. VITE_DEV_SERVER from a prior run or port bump).
     result = result.replace(
+        /https?:\/\/[^/"'\s)]+(?=\/(?:node_modules|src|@fs|@id)\/)/g,
+        devServerUrl,
+    );
+
+    result = result.replace(
         /url\(\s*https?:\/\/[^/)]+(?=\/(?:node_modules|src|@fs|@id)\/)/g,
         `url(${devServerUrl}`,
     );

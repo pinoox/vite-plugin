@@ -96,7 +96,18 @@ export function resolveViteDevOrigin(env = {}, port = 5173, options = {}) {
         return String(fromEnv).replace(/\/$/, '');
     }
 
-    const host = options.host ?? true;
+    return resolveViteOriginFromPort(env, port, options);
+}
+
+/**
+ * Dev-server origin from bind host + port only (never stale VITE_DEV_SERVER).
+ *
+ * @param {Record<string, string>} env
+ * @param {number} [port]
+ * @param {{ host?: boolean|string }} [options]
+ */
+export function resolveViteOriginFromPort(env = {}, port = 5173, options = {}) {
+    const host = options.host ?? resolveViteHost(env, options);
     const hostname = host === true || host === '0.0.0.0' ? '127.0.0.1' : (host || '127.0.0.1');
 
     return `http://${hostname}:${port}`;

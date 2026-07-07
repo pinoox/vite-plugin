@@ -86,11 +86,14 @@ export function pinooxHot(options = {}) {
             const updateHot = () => writeHot(server);
 
             server.httpServer?.once('listening', () => {
+                const devUrl = resolveDevServerUrlFromInstance(server, pluginEnv);
+                const port = resolveListeningPort(server) ?? server.config.server.port ?? 5173;
+
+                server.config.server.origin = devUrl;
+
                 if (resolveNetworkMode(pluginEnv, options)) {
                     const hostname = resolveVitePublicHostname(pluginEnv);
-                    const port = server.config.server.port ?? 5173;
 
-                    server.config.server.origin = `http://${hostname}:${port}`;
                     server.config.server.hmr = {
                         ...(typeof server.config.server.hmr === 'object' ? server.config.server.hmr : {}),
                         host: hostname,
@@ -100,7 +103,7 @@ export function pinooxHot(options = {}) {
                 }
 
                 updateHot();
-                printPinooxDevBanner(pluginEnv, server.config.server.port ?? 5173);
+                printPinooxDevBanner(pluginEnv, port);
             });
 
             if (server.httpServer?.listening) {
