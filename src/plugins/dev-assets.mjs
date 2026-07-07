@@ -1,4 +1,4 @@
-import { resolveDevServerUrlFromInstance, resolveViteDevOrigin } from '../env.mjs';
+import { resolveDevServerUrlFromInstance } from '../env.mjs';
 
 /** @type {RegExp} */
 const DEV_ASSET_ROOT_PATTERN = /\/(node_modules|src|@fs|@id)\//;
@@ -16,6 +16,12 @@ export function rewriteDevAssetUrls(code, devServerUrl) {
     }
 
     let result = code;
+
+    // Replace stale absolute dev origins (e.g. VITE_DEV_SERVER from a prior run or port bump).
+    result = result.replace(
+        /url\(\s*https?:\/\/[^/)]+(?=\/(?:node_modules|src|@fs|@id)\/)/g,
+        `url(${devServerUrl}`,
+    );
 
     result = result.replace(
         /(["'`])\/(node_modules|src|@fs|@id)\//g,
@@ -52,23 +58,23 @@ export function rewriteDevAssetUrls(code, devServerUrl) {
  * @param {Record<string, string>} [env]
  */
 export function pinooxDevAssets(env = {}) {
-    let devServerUrl = resolveViteDevOrigin(env);
+    /** @type {import('vite').ViteDevServer | null} */
+    let serverInstance = null;
 
     return {
         name: 'pinoox-dev-assets',
         apply: 'serve',
+        enforce: 'post',
         configureServer(server) {
-            const updateDevServerUrl = () => {
-                devServerUrl = resolveDevServerUrlFromInstance(server, env);
-            };
-
-            server.httpServer?.once('listening', updateDevServerUrl);
-
-            if (server.httpServer?.listening) {
-                updateDevServerUrl();
-            }
+            serverInstance = server;
         },
         transform(code) {
+            if (!serverInstance) {
+                return null;
+            }
+
+            const devServerUrl = resolveDevServerUrlFromInstance(serverInstance, env);
+
             return rewriteDevAssetUrls(code, devServerUrl);
         },
     };

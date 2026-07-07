@@ -72,13 +72,14 @@ export function mergePinooxServer(defaults, overrides = {}) {
  */
 export function pinooxServer(env = {}, options = {}) {
     const serverUrl = env.VITE_SERVER_URL || options.serverUrl || DEFAULT_PHP_ORIGIN;
-    const port = Number(env.VITE_DEV_PORT || options.port || DEFAULT_VITE_PORT);
+    const explicitPort = env.VITE_DEV_PORT || options.port;
+    const port = Number(explicitPort || DEFAULT_VITE_PORT);
     const phpOrigin = parseOrigin(serverUrl);
     const network = resolveNetworkMode(env, options);
     const viteOrigin = network
         ? resolveVitePublicOrigin(env, port)
         : resolveViteDevOrigin(env, port, options);
-    const strictPort = options.strictPort ?? false;
+    const strictPort = options.strictPort ?? Boolean(explicitPort);
     const prefixes = resolveProxyPrefixes(env, options, serverUrl);
     const proxy = {};
 
@@ -90,6 +91,7 @@ export function pinooxServer(env = {}, options = {}) {
         port,
         host: resolveViteHost(env, options),
         strictPort,
+        cors: options.cors ?? true,
         proxy,
         printUrls: false,
         origin: viteOrigin,

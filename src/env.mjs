@@ -103,6 +103,22 @@ export function resolveViteDevOrigin(env = {}, port = 5173, options = {}) {
 }
 
 /**
+ * Actual TCP port the dev server is listening on (may differ from config when strictPort is false).
+ *
+ * @param {import('vite').ViteDevServer} server
+ * @returns {number|null}
+ */
+export function resolveListeningPort(server) {
+    const address = server.httpServer?.address();
+
+    if (address && typeof address === 'object' && typeof address.port === 'number' && address.port > 0) {
+        return address.port;
+    }
+
+    return null;
+}
+
+/**
  * @param {import('vite').ViteDevServer} server
  * @param {Record<string, string>} [env]
  */
@@ -123,7 +139,7 @@ export function resolveDevServerUrlFromInstance(server, env = {}) {
         }
     }
 
-    const port = server.config.server.port ?? 5173;
+    const port = resolveListeningPort(server) ?? server.config.server.port ?? 5173;
 
     return `http://${hostname}:${port}`;
 }

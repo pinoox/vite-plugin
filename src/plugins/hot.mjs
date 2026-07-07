@@ -4,7 +4,9 @@ import { printPinooxDevBanner } from '../banner.mjs';
 import { resolveHotFile } from '../config.mjs';
 import {
     mergedEnv,
+    resolveDevServerUrlFromInstance,
     resolveNetworkMode,
+    resolveListeningPort,
     resolveVitePublicHostname,
 } from '../env.mjs';
 import { createPinooxViteLogger } from '../logger.mjs';
@@ -24,26 +26,12 @@ export function pinooxHot(options = {}) {
         : path.join(themeRoot, hotRelative);
 
     const writeHot = (server) => {
-        const host = server.config.server.host;
-        let hostname = host === true || host === '0.0.0.0' ? '127.0.0.1' : (host || '127.0.0.1');
-
-        if ((pluginEnv.VITE_DEV_NETWORK || process.env.VITE_DEV_NETWORK) === 'true') {
-            const appUrl = pluginEnv.VITE_SERVER_URL || process.env.VITE_SERVER_URL;
-
-            if (appUrl) {
-                try {
-                    hostname = new URL(appUrl).hostname;
-                } catch {
-                    // keep default
-                }
-            }
-        }
-
-        const port = server.config.server.port ?? 5173;
-        const devUrl = `http://${hostname}:${port}`;
+        const devUrl = resolveDevServerUrlFromInstance(server, pluginEnv);
+        const port = resolveListeningPort(server) ?? server.config.server.port ?? 5173;
 
         fs.mkdirSync(path.dirname(hotFilePath), { recursive: true });
         fs.writeFileSync(hotFilePath, devUrl);
+        fs.writeFileSync(path.join(path.dirname(hotFilePath), '.vite-dev-port'), String(port));
     };
 
     const cleanup = () => {

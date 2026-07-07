@@ -2,6 +2,10 @@
 
 Vite integration for **Pinoox app themes**: Twig shell on PHP, frontend entry on Vite, HMR and production manifest wired for `vite_tags()` in PHP.
 
+- **npm:** [@pinooxhq/vite-plugin](https://www.npmjs.com/package/@pinooxhq/vite-plugin)
+- **GitHub:** [pinoox/vite-plugin](https://github.com/pinoox/vite-plugin)
+- **Issues:** [github.com/pinoox/vite-plugin/issues](https://github.com/pinoox/vite-plugin/issues)
+
 ## Table of contents
 
 - [How it works](#how-it-works)
@@ -25,6 +29,7 @@ Vite integration for **Pinoox app themes**: Twig shell on PHP, frontend entry on
 - [Environment variables](#environment-variables)
 - [Advanced exports](#advanced-exports)
 - [Package layout](#package-layout)
+- [Releasing (maintainers)](#releasing-maintainers)
 - [Requirements](#requirements)
 
 ---
@@ -59,7 +64,15 @@ Always open the **Open app** URL (PHP origin) during dev — not the raw Vite po
 
 ## Install
 
-Add to `apps/{package}/theme/{theme}/package.json`:
+### From npm (recommended)
+
+In your Pinoox app theme (`apps/{package}/theme/{theme}/`):
+
+```bash
+npm install -D @pinooxhq/vite-plugin vite
+```
+
+Or add to `package.json`:
 
 ```json
 {
@@ -78,21 +91,13 @@ Add to `apps/{package}/theme/{theme}/package.json`:
 
 Stack-specific plugins go in the same `devDependencies` block (see [Guides by stack](#guides-by-stack)).
 
-**Monorepo** (local package path):
-
-```json
-"@pinooxhq/vite-plugin": "file:../../../../packages/vite-plugin"
-```
-
-From the project root:
+From the Pinoox project root you can also use:
 
 ```bash
 php pinoox fe com_my_app install --theme=default
-# or inside the theme folder:
-npm install
 ```
 
----
+`fe install` syncs the `@pinooxhq/vite-plugin` version expected by your Pinoox release.
 
 ## Theme setup
 
@@ -842,24 +847,29 @@ import pinooxHot, { pinooxDevAssets, pinooxRefresh, pinooxServer } from '@pinoox
 
 ```
 packages/vite-plugin/
-├── index.mjs              # @pinooxhq/vite-plugin
-├── vue.mjs                # @pinooxhq/vite-plugin/vue
+├── .github/workflows/
+│   ├── ci.yml               # pack check + import smoke test on push/PR
+│   └── publish.yml          # npm publish on tag (Trusted Publisher)
+├── index.mjs                # @pinooxhq/vite-plugin
+├── vue.mjs                  # @pinooxhq/vite-plugin/vue
+├── LICENSE
+├── package.json
 └── src/
-    ├── index.mjs          # pinoox() + public API
-    ├── compose.mjs        # bundles hot, dev-assets, refresh, config
-    ├── config.mjs         # entries, hot file, config normalization
-    ├── constants.mjs      # defaults (entries per stack, refresh globs)
-    ├── env.mjs            # VITE_* helpers
-    ├── server.mjs         # dev-server proxy + merge
-    ├── refresh.mjs        # Twig / backend full-reload
-    ├── factory.mjs        # createPinooxViteConfig()
-    ├── logger.mjs         # quiet Vite logger
-    ├── banner.mjs         # fe dev terminal banner
-    ├── vue.mjs            # pinooxVueTemplateOptions, vue()
+    ├── index.mjs            # pinoox() + public API
+    ├── compose.mjs          # bundles hot, dev-assets, refresh, config
+    ├── config.mjs           # entries, hot file, config normalization
+    ├── constants.mjs        # defaults (entries per stack, refresh globs)
+    ├── env.mjs              # VITE_* helpers
+    ├── server.mjs           # dev-server proxy + merge
+    ├── refresh.mjs          # Twig / backend full-reload
+    ├── factory.mjs          # createPinooxViteConfig()
+    ├── logger.mjs           # quiet Vite logger
+    ├── banner.mjs           # fe dev terminal banner
+    ├── vue.mjs              # pinooxVueTemplateOptions, vue()
     └── plugins/
-        ├── pinoox.mjs     # build + server config hook
-        ├── hot.mjs        # dist/hot file
-        └── dev-assets.mjs # dev URL rewrite
+        ├── pinoox.mjs       # build + server config hook
+        ├── hot.mjs          # dist/hot file
+        └── dev-assets.mjs   # dev URL rewrite
 ```
 
 Default entries per stack (`constants.mjs`):
@@ -876,8 +886,56 @@ Default entries per stack (`constants.mjs`):
 
 ---
 
+## Releasing (maintainers)
+
+This package is developed in the [pinoox/vite-plugin](https://github.com/pinoox/vite-plugin) repository and published to the [@pinooxhq](https://www.npmjs.com/org/pinooxhq) npm org.
+
+### CI
+
+| Workflow | Trigger | What it does |
+|----------|---------|--------------|
+| `ci.yml` | push / PR to `main` | `npm run pack:check`, smoke-test tarball imports |
+| `publish.yml` | tag `v*` (e.g. `v1.8.0`) | verifies tag ↔ `package.json` version, publishes to npm |
+
+Publishing uses **npm Trusted Publisher** (GitHub Actions OIDC) — no `NPM_TOKEN` secret.
+
+Trusted Publisher settings on npm:
+
+| Field | Value |
+|-------|-------|
+| Publisher | GitHub Actions |
+| Organization or user | `pinoox` |
+| Repository | `vite-plugin` |
+| Workflow filename | `publish.yml` |
+| Environment name | `npm` |
+| Allowed actions | Publish |
+
+Create a matching **GitHub Environment** named `npm` in the repository (Settings → Environments).
+
+### Release steps
+
+1. Bump `"version"` in `package.json` (semver: fix → patch, feat → minor, breaking → major).
+2. Commit and push to `main`.
+3. Tag and push:
+
+```bash
+git tag v1.8.0
+git push origin v1.8.0
+```
+
+4. GitHub Actions runs `publish.yml` and publishes `@pinooxhq/vite-plugin@1.8.0` with provenance.
+
+Local sanity check before tagging:
+
+```bash
+npm run pack:check
+```
+
+---
+
 ## Requirements
 
-- Node.js with ESM (`"type": "module"` in theme `package.json` recommended)
+- Node.js **>= 18** (`engines` in `package.json`)
+- `"type": "module"` in theme `package.json` recommended
 - `vite` ^5 || ^6 || ^7 || ^8
 - `@vitejs/plugin-vue` ^5 || ^6 (optional; required for Vue themes)
