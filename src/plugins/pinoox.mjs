@@ -1,5 +1,5 @@
 import { buildBundlerOptions } from '../build-input.mjs';
-import { normalizeBuildOutDir, resolveBuildOutDir, writeBuildOutDirCache } from '../build-dir.mjs';
+import { normalizeBuildOutDir, resolveBuildOutDir, writeDevState } from '../dev-state.mjs';
 import { resolveBuildInput } from '../config.mjs';
 import { mergePinooxServer, pinooxServer } from '../server.mjs';
 
@@ -70,7 +70,7 @@ export function resolvePinooxPlugin(pluginConfig) {
             }
         },
         closeBundle() {
-            writeBuildOutDirCache(process.cwd(), resolvedOutDir);
+            writeDevState(process.cwd(), { outDir: resolvedOutDir });
         },
     };
 }

@@ -1,6 +1,6 @@
 import { resolvePinooxPluginConfig } from './config.mjs';
 import { pinooxDevAssets } from './plugins/dev-assets.mjs';
-import { pinooxHot } from './plugins/hot.mjs';
+import { pinooxDevState } from './plugins/dev-state.mjs';
 import { resolvePinooxPlugin } from './plugins/pinoox.mjs';
 import { pinooxRefresh, resolveRefreshPaths } from './refresh.mjs';
 
@@ -18,7 +18,7 @@ export function composePinooxPlugins(config) {
 
     return [
         resolvePinooxPlugin(pluginConfig),
-        pinooxHot({ env, file: pluginConfig.hotFile }),
+        pinooxDevState({ env: pluginConfig.env }),
         pinooxDevAssets(env),
         ...(refreshPaths.length > 0 ? [pinooxRefresh(refresh, env)] : []),
     ];

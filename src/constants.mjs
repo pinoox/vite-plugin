@@ -15,8 +15,6 @@ export const DEFAULT_REFRESH_PATHS = [
     'views/**/*.twig',
 ];
 
-export const DEFAULT_HOT_FILE = 'dist/hot';
-
 export const DEFAULT_BUILD_DIR = 'dist';
 
 export const DEFAULT_PHP_ORIGIN = 'http://127.0.0.1:8000';

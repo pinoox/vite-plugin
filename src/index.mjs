@@ -1,21 +1,23 @@
 import { composePinooxPlugins } from './compose.mjs';
 import {
-    hotFileForOutDir,
+    PINOOX_DEV_STATE,
     manifestFileForOutDir,
     normalizeBuildOutDir,
+    readDevState,
+    removeDevState,
     resolveBuildOutDir,
-    resolveHotFile,
     writeBuildOutDirCache,
-} from './build-dir.mjs';
+    writeDevState,
+} from './dev-state.mjs';
 import { createPinooxViteConfig } from './factory.mjs';
 import { resolvePinooxPluginConfig } from './config.mjs';
-import { pinooxHot } from './plugins/hot.mjs';
+import { pinooxDevState, pinooxHot } from './plugins/dev-state.mjs';
 import { pinooxDevAssets } from './plugins/dev-assets.mjs';
 import { collectAbsoluteWatchRoots, pinooxRefresh, resolveRefreshPaths } from './refresh.mjs';
 import { pinooxServer } from './server.mjs';
 
 /**
- * Pinoox plugin for Vite — Laravel-style API.
+ * Pinoox plugin for Vite.
  *
  * @example
  * import { defineConfig } from 'vite';
@@ -38,18 +40,21 @@ export {
     collectAbsoluteWatchRoots,
     composePinooxPlugins,
     createPinooxViteConfig,
-    hotFileForOutDir,
     manifestFileForOutDir,
     normalizeBuildOutDir,
+    PINOOX_DEV_STATE,
     pinooxDevAssets,
+    pinooxDevState,
     pinooxHot,
     pinooxRefresh,
     pinooxServer,
+    readDevState,
+    removeDevState,
     resolveBuildOutDir,
-    resolveHotFile,
     resolvePinooxPluginConfig,
     resolveRefreshPaths,
     writeBuildOutDirCache,
+    writeDevState,
 };
 
 export default pinoox;

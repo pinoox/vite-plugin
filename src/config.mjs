@@ -1,12 +1,9 @@
-export { resolveHotFile } from './build-dir.mjs';
-
 /**
  * @typedef {Object} PinooxPluginConfig
  * @property {string|string[]} [input]
  * @property {string|string[]} [entries]
  * @property {Record<string, string>} [env]
  * @property {string[]|boolean} [refresh]
- * @property {string} [hotFile]
  * @property {import('vite').ServerOptions} [server]
  * @property {import('vite').BuildOptions} [build]
  */
@@ -29,7 +26,6 @@ export function resolvePinooxPluginConfig(config) {
         entries: normalizePinooxEntries(entries),
         env: config.env ?? {},
         refresh: config.refresh ?? true,
-        hotFile: config.hotFile,
         server: config.server,
         build: config.build,
     };
