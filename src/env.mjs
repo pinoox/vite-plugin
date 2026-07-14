@@ -1,3 +1,5 @@
+import os from 'node:os';
+
 /**
  * @param {Record<string, string>} [env]
  * @returns {Record<string, string>}
@@ -57,15 +59,66 @@ export function resolveNetworkMode(env = {}, options = {}) {
 }
 
 /**
+ * @param {string} hostname
+ */
+export function isLoopbackHostname(hostname) {
+    const host = String(hostname || '').toLowerCase();
+
+    return host === '127.0.0.1' || host === 'localhost' || host === '::1';
+}
+
+/**
+ * Prefer a private IPv4 usable by phones on the same LAN.
+ *
+ * @returns {string|null}
+ */
+export function detectLanIp() {
+    const nets = os.networkInterfaces();
+    /** @type {string[]} */
+    const candidates = [];
+
+    for (const entries of Object.values(nets)) {
+        for (const net of entries || []) {
+            const family = net.family;
+
+            if (family !== 'IPv4' && family !== 4) {
+                continue;
+            }
+
+            if (net.internal) {
+                continue;
+            }
+
+            candidates.push(net.address);
+        }
+    }
+
+    const preferred = candidates.find((ip) => (
+        ip.startsWith('192.168.')
+        || ip.startsWith('10.')
+        || /^172\.(1[6-9]|2\d|3[0-1])\./.test(ip)
+    ));
+
+    return preferred || candidates[0] || null;
+}
+
+/**
  * @param {Record<string, string>} env
  */
 export function resolveVitePublicHostname(env = {}) {
     const merged = mergedEnv(env);
+    const network = resolveNetworkMode(merged);
     const appUrl = merged.VITE_SERVER_URL || process.env.VITE_SERVER_URL;
 
     if (appUrl) {
         try {
-            return new URL(appUrl).hostname;
+            const hostname = new URL(appUrl).hostname;
+
+            if (network && isLoopbackHostname(hostname)) {
+                return detectLanIp() || hostname;
+            }
+
+            return hostname;
         } catch {
             // fall through
         }
@@ -73,7 +126,11 @@ export function resolveVitePublicHostname(env = {}) {
 
     const host = resolveViteHost(merged);
 
-    return host === true || host === '0.0.0.0' ? '127.0.0.1' : (host || '127.0.0.1');
+    if (host === true || host === '0.0.0.0') {
+        return network ? (detectLanIp() || '127.0.0.1') : '127.0.0.1';
+    }
+
+    return host || '127.0.0.1';
 }
 
 /**
@@ -93,7 +150,23 @@ export function resolveViteDevOrigin(env = {}, port = 5173, options = {}) {
     const fromEnv = env.VITE_DEV_SERVER || process.env.VITE_DEV_SERVER || options.viteOrigin;
 
     if (fromEnv) {
-        return String(fromEnv).replace(/\/$/, '');
+        const url = String(fromEnv).replace(/\/$/, '');
+
+        if (resolveNetworkMode(env, options)) {
+            try {
+                const parsed = new URL(url);
+
+                if (isLoopbackHostname(parsed.hostname)) {
+                    parsed.hostname = resolveVitePublicHostname(env);
+
+                    return parsed.origin;
+                }
+            } catch {
+                // keep original
+            }
+        }
+
+        return url;
     }
 
     return resolveViteOriginFromPort(env, port, options);
@@ -108,7 +181,12 @@ export function resolveViteDevOrigin(env = {}, port = 5173, options = {}) {
  */
 export function resolveViteOriginFromPort(env = {}, port = 5173, options = {}) {
     const host = options.host ?? resolveViteHost(env, options);
-    const hostname = host === true || host === '0.0.0.0' ? '127.0.0.1' : (host || '127.0.0.1');
+
+    if (resolveNetworkMode(env, options) || host === true || host === '0.0.0.0') {
+        return `http://${resolveVitePublicHostname(env)}:${port}`;
+    }
+
+    const hostname = host || '127.0.0.1';
 
     return `http://${hostname}:${port}`;
 }
@@ -135,22 +213,14 @@ export function resolveListeningPort(server) {
  */
 export function resolveDevServerUrlFromInstance(server, env = {}) {
     const merged = mergedEnv(env);
-    const host = server.config.server.host;
-    let hostname = host === true || host === '0.0.0.0' ? '127.0.0.1' : (host || '127.0.0.1');
+    const port = resolveListeningPort(server) ?? server.config.server.port ?? 5173;
 
-    if ((merged.VITE_DEV_NETWORK || process.env.VITE_DEV_NETWORK) === 'true') {
-        const appUrl = merged.VITE_SERVER_URL || process.env.VITE_SERVER_URL;
-
-        if (appUrl) {
-            try {
-                hostname = new URL(appUrl).hostname;
-            } catch {
-                // keep default
-            }
-        }
+    if (resolveNetworkMode(merged)) {
+        return `http://${resolveVitePublicHostname(merged)}:${port}`;
     }
 
-    const port = resolveListeningPort(server) ?? server.config.server.port ?? 5173;
+    const host = server.config.server.host;
+    const hostname = host === true || host === '0.0.0.0' ? '127.0.0.1' : (host || '127.0.0.1');
 
     return `http://${hostname}:${port}`;
 }

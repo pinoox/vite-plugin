@@ -1,4 +1,4 @@
-import { resolveLocalAppUrl, resolveViteHost } from './env.mjs';
+import { resolveLocalAppUrl, resolveVitePublicHostname } from './env.mjs';
 
 /**
  * @param {Record<string, string>} env
@@ -17,16 +17,7 @@ export function printPinooxDevBanner(env = {}, port = 5173) {
 
     const network = (env.VITE_DEV_NETWORK || process.env.VITE_DEV_NETWORK) === 'true';
     const serveApp = env.VITE_SERVE_APP || process.env.VITE_SERVE_APP;
-    const host = resolveViteHost(env);
-    let hmrHost = host === true || host === '0.0.0.0' ? '127.0.0.1' : (host || '127.0.0.1');
-
-    if (network) {
-        try {
-            hmrHost = new URL(appUrl).hostname;
-        } catch {
-            // keep default
-        }
-    }
+    const hmrHost = resolveVitePublicHostname(env);
 
     console.log('');
     console.log('  \x1b[32m\x1b[1m➜\x1b[0m  \x1b[36m\x1b[1mOpen app\x1b[0m  ' + appUrl);
