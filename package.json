@@ -1,6 +1,6 @@
 {
   "name": "@pinooxhq/vite-plugin",
-  "version": "1.9.4",
+  "version": "1.9.5",
   "description": "Vite plugin for Pinoox themes — dev state, dev proxy, Twig refresh",
   "type": "module",
   "license": "MIT",

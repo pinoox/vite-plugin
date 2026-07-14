@@ -68,11 +68,27 @@ export function isLoopbackHostname(hostname) {
 }
 
 /**
- * Prefer a private IPv4 usable by phones on the same LAN.
+ * Prefer a phone-reachable Wi‑Fi/LAN IPv4.
+ * Skip Hyper-V/WSL virtual adapters (typically 172.16–31.x) until last resort.
  *
  * @returns {string|null}
  */
 export function detectLanIp() {
+    const candidates = collectLanIpv4Addresses();
+
+    const pick = (predicate) => candidates.find(predicate) || null;
+
+    return pick((ip) => ip.startsWith('192.168.'))
+        || pick((ip) => ip.startsWith('10.'))
+        || pick((ip) => !isLikelyVirtualAdapterIp(ip))
+        || candidates[0]
+        || null;
+}
+
+/**
+ * @returns {string[]}
+ */
+export function collectLanIpv4Addresses() {
     const nets = os.networkInterfaces();
     /** @type {string[]} */
     const candidates = [];
@@ -93,13 +109,24 @@ export function detectLanIp() {
         }
     }
 
-    const preferred = candidates.find((ip) => (
-        ip.startsWith('192.168.')
-        || ip.startsWith('10.')
-        || /^172\.(1[6-9]|2\d|3[0-1])\./.test(ip)
-    ));
+    return [...new Set(candidates)];
+}
 
-    return preferred || candidates[0] || null;
+/**
+ * Hyper-V / WSL / Docker bridge ranges commonly appear before Wi‑Fi on Windows.
+ *
+ * @param {string} ip
+ */
+export function isLikelyVirtualAdapterIp(ip) {
+    const match = /^172\.(\d+)\./.exec(String(ip || ''));
+
+    if (!match) {
+        return false;
+    }
+
+    const second = Number(match[1]);
+
+    return second >= 16 && second <= 31;
 }
 
 /**
@@ -114,7 +141,7 @@ export function resolveVitePublicHostname(env = {}) {
         try {
             const hostname = new URL(appUrl).hostname;
 
-            if (network && isLoopbackHostname(hostname)) {
+            if (network && (isLoopbackHostname(hostname) || isLikelyVirtualAdapterIp(hostname))) {
                 return detectLanIp() || hostname;
             }
 
